@@ -1,2 +1,2 @@
-# ioio_gobang
+# gobang
 五子棋
