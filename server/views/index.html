@@ -8,12 +8,41 @@
       #wuziqi{
         padding-top: 70px;
         text-align: center;
+        position: relative;
+      }
+      #canvas{
+      }
+      #playOne{
+        position: absolute;
+        top: 200px;
+        left: 130px;
+      }
+      #playTwo{
+        position: absolute;
+        top: 280px;
+        left: 130px;
+      }
+      #playThree{
+        position: absolute;
+        top: 320px;
+        left: 130px;
+      }
+      #starGame{
+        position: absolute;
+        top: 130px;
+        left: 130px;
       }
     </style>
   </head>
   <body>
     <div id="wuziqi">
-      <canvas id="canvas" width="500" height="500"></canvas>
+      <canvas id="canvas" width="466" height="466"></canvas>
+      <button id="starGame">开始</button>
+
+      <button id="playOne">玩家一</button>
+      <button id="playTwo">玩家二</button>
+
+      <button id="playThree">观众</button>
     </div>
 
     <script type="text/javascript">
@@ -22,71 +51,56 @@
       var width = canvas.width;
       var height = canvas.height;
       var lineNumber = 16;
+      var padding = 8;
       var r = 6;
-      var distance = 31.25;
+      var distance = 30;
       var pointR = 3;
-      var fourDot = [{x:3 *distance, y:3 *distance},{x:12 *distance, y:3 *distance},
-                    {x:3 *distance, y:12 *distance},{x:12 *distance, y:12 *distance}];
+      var fourDot = [{x:3 *distance +padding, y:3 *distance +padding},{x:12 *distance +padding, y:3 *distance +padding},
+                    {x:3 *distance +padding, y:12 *distance +padding},{x:12 *distance +padding, y:12 *distance +padding}];
 
-      var wuziqiDot = [];
+      //登录id
+      var client_id = "1";
       var status = 1;
-      var allWinArray = [];
 
-      //所有赢的情况
-      function allWin(){
-        // 横向
-        for (var i = 0; i < lineNumber; i++) {
-          for (var j = 0; j < lineNumber - 5; j++) {
-            allWinArray.push([[i,j],[i+1,j],[i+2,j],[i+3,j],[i+4,j]]);
-          }
-        }
-        // 竖列
-        for (var i = 0; i < lineNumber; i++) {
-          for (var j = 0; j < lineNumber - 5; j++) {
-            allWinArray.push([[i,j],[i,j+1],[i,j+2],[i,j+3],[i,j+4]]);
-          }
-        }
+      var gameOver;
 
-        for (var i = 0; i < lineNumber; i++) {
-          for (var j = 0; j < lineNumber ;j++) {
-            if(i-4>=0 && j+4<=15) {
-              allWinArray.push([[i,j],[i-1,j+1],[i-2,j+2],[i-3,j+3],[i-4,j+4]]);
-            }
-            if(i+4<=15 && j+4<=15){
-              allWinArray.push([[i,j],[i+1,j+1],[i+2,j+2],[i+3,j+3],[i+4,j+4]]);
-            }
-          }
+      $('#playOne').click(function(){
+          client_id = "1";
+      });
 
-        }
-        console.log(JSON.stringify(allWinArray));
+      $('#playTwo').click(function(){
+          client_id = "2";
+      });
 
-      }
+      $('#playThree').click(function(){
+          client_id = "3";
+      });
+
+      $('#starGame').click(function(){
+        reCanvasQipan();
+      })
 
       //绘制棋盘
       function qipan(){
+        context.fillStyle = '#999';
+        context.strokeStyle = '#999';
+
         var starDotX = 0;
         var starDotY = 0;
         for (var i = 0; i < lineNumber; i++) {
           context.save();
           context.beginPath();
           context.lineWidth = 2;
-          context.moveTo(i * distance, 0);
-          context.lineTo(i * distance, distance * (lineNumber-1));
+          context.moveTo(i * distance +padding, padding);
+          context.lineTo(i * distance +padding, distance * (lineNumber-1) +padding);
           context.stroke();
-
-          wuziqiDot[i] = [];
-          for (var j = 0; j < lineNumber; j++) {
-            wuziqiDot[i][j] = 0;
-          }
         }
-
 
         for (var i = 0; i < lineNumber; i++) {
           context.save();
           context.beginPath();
-          lineWidth = 4;
-          context.moveTo(0, i * distance);
-          context.lineTo(distance * (lineNumber-1), i * distance);
+          context.moveTo(padding, i * distance +padding);
+          context.lineTo(distance * (lineNumber-1) +padding, i * distance +padding);
           context.stroke();
 
         }
@@ -102,84 +116,131 @@
 
       }
 
+      function process(rows) {
+        for (var i = 0; i < rows.length; i++) {
+          var row = rows[i];
+
+          if(row.type == 'dot'){
+            var dot = row.dot;
+            var dotPointXm = dot.i *distance +padding;
+            var dotPointYm = dot.j *distance +padding;
+
+            context.save();
+            context.beginPath();
+
+            if (row.player == "1") {
+              context.fillStyle = '#000';
+              context.strokeStyle = '#000';
+            } else {
+              context.fillStyle = 'red';
+              context.strokeStyle = 'red';
+
+            }
+            context.arc(dotPointXm, dotPointYm, r, 0, 2*Math.PI);
+
+            context.fill();
+            context.stroke();
+          }else if (row.type == "win") {
+            alert(row.player+'赢了');
+            clearInterval(gameOver);
+            reCanvasQipan();
+          } else if (row.type == "clear") {
+            clearInterval(gameOver);
+            reCanvasQipan();
+          }
+        }
+      }
+
       function dotBlack(){
+        if (parseInt(client_id) != status) {
+          alert('还没轮到你');
+          return;
+        }
+
         var pageX = event.clientX;
         var pageY = event.clientY;
         var rect = canvas.getBoundingClientRect();
-        var canvasX = pageX - rect.left;
-        var canvasY = pageY - rect.top;
+        var canvasX = pageX - rect.left -r;
+        var canvasY = pageY - rect.top -r;
 
         var qipan_x = Math.round(canvasX/distance);
         var qipan_y = Math.round(canvasY/distance);
 
-        //判断点是不是已经下棋
-        if (wuziqiDot[qipan_y][qipan_x] != 0) {
-          alert("已经有棋子");
-          return;
-        }
+        $.ajax({
+            url: "/erupt",
+            dataType: 'json',
+            type: 'POST',
+            data: {'client_id':client_id,'dot':JSON.stringify({'i':qipan_x,'j':qipan_y})},
+            success: function(data) {
+                if(data.success){
+                  if (data.player) {
+                    status = data.player;
+                  }
+                  var rows = data.rows;
 
-        wuziqiDot[qipan_y][qipan_x] = status;
-
-        var dotPointXm = qipan_x *distance;
-        var dotPointYm = qipan_y *distance;
-
-        context.save();
-        context.beginPath();
-
-        if (status == 1) {
-          status = 2;
-          context.fillStyle = '#000';
-          context.strokeStyle = '#000';
-
-
-        } else {
-          status = 1;
-          context.fillStyle = 'red';
-          context.strokeStyle = 'red';
-
-        }
-        context.arc(dotPointXm, dotPointYm, 6, 0, 2*Math.PI);
-
-        context.fill();
-        context.stroke();
-
-        var winner = win();
-        if (winner != 0) {
-          alert(winner+'赢了');
-        }
+                  process(rows);
+                }else {
+                }
+            }.bind(this),
+            error: function(xhr, status, err) {
+            }.bind(this)
+        });
       }
 
-      //判断输赢
-      function win(){
-        for (var i = 0; i < allWinArray.length; i++) {
-          var winArray = allWinArray[i];
+      function dotState(){
+        $.ajax({
+            url: "/status",
+            dataType: 'json',
+            type: 'GET',
+            data: {'client_id':client_id},
+            success: function(data) {
+                if(data.success){
+                  if (data.player) {
+                    status = data.player;
+                  }
 
-          //判断第一个点是不是0
-          var point0 = winArray[0];
-          var point1 = winArray[1];
-          var point2 = winArray[2];
-          var point3 = winArray[3];
-          var point4 = winArray[4];
+                  var rows = data.rows;
 
-          if (wuziqiDot[point0[0]][point0[1]] != 0) {
-            if (wuziqiDot[point0[0]][point0[1]] == wuziqiDot[point1[0]][point1[1]] &&
-                wuziqiDot[point0[0]][point0[1]] == wuziqiDot[point2[0]][point2[1]] &&
-                wuziqiDot[point0[0]][point0[1]] == wuziqiDot[point3[0]][point3[1]] &&
-                wuziqiDot[point0[0]][point0[1]] == wuziqiDot[point4[0]][point4[1]])
-            {
-              return wuziqiDot[point0[0]][point0[1]];
-            }
-          }
-        }
+                  process(rows);
+                }else {
+                  alert(data.message);
+                }
+            }.bind(this),
+            error: function(xhr, status, err) {
+            }.bind(this)
+        });
+      }
 
-        return 0;
+
+
+      function reCanvasQipan(){
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.save();
+          qipan();
+
+          context.restore();
+
+          $.ajax({
+              url: "/init_game",
+              dataType: 'json',
+              type: 'POST',
+              data: {},
+              success: function(data) {
+                  if(data.success){
+                    gameOver = setInterval(dotState ,1000);
+                    status = 1;
+                  }
+              }.bind(this),
+              error: function(xhr, status, err) {
+              }.bind(this)
+          });
       }
 
       canvas.addEventListener("mousedown",dotBlack);
 
       window.onload = function(){
-        allWin();
         qipan();
+        gameOver = setInterval(dotState ,1000);
       }
     </script>
   </body>
