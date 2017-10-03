@@ -58,6 +58,20 @@ exports.register = function(server, options, next) {
             },
         },
         
+        //首页
+        {
+            method: 'GET',
+            path: '/socket_index',
+            handler: function(request, reply) {
+                var cookie = request.state.cookie;
+                if (!cookie) {
+                    cookie = {};
+                }
+                cookie[cookie_key] = "1";
+                return reply.view("socket_index").state('cookie', cookie, cookie_options);
+            },
+        },
+        
         //初始化棋盘
         {
             method: 'POST',
@@ -128,6 +142,8 @@ exports.register = function(server, options, next) {
                 uu_request.do_post_method(url, data, function(err, info) {
                     if (!err) {
                         if (info.success) {
+                            //广播消息
+                            
                             return reply({"success":true,"message":"ok","rows":info.rows,"player":info.player,"service_info":service_info});
                         } else {
                             return reply({"success":false,"message":info.message,"service_info":service_info});

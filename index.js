@@ -61,6 +61,8 @@ server.register([
         register: require('./server/controller/index_controller.js')
     }, {
         register: require('./server/controller/gobang_controller.js')
+    }, {
+        register: require('./server/socket/socket_io.js')
     },
 
 ], function () {

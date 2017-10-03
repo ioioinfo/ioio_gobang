@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>五子棋</title>
+    <script src="js/jquery-3.1.1.min.js" type="text/javascript"></script>
+    <style media="screen">
+      #wuziqi{
+        padding-top: 70px;
+        text-align: center;
+        position: relative;
+      }
+      #canvas{
+      }
+      #playOne{
+        position: absolute;
+        top: 200px;
+        left: 130px;
+      }
+      #playTwo{
+        position: absolute;
+        top: 280px;
+        left: 130px;
+      }
+      #playThree{
+        position: absolute;
+        top: 320px;
+        left: 130px;
+      }
+      #starGame{
+        position: absolute;
+        top: 130px;
+        left: 130px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wuziqi">
+      <canvas id="canvas" width="466" height="466"></canvas>
+      <button id="starGame">开始</button>
+
+      <button id="playOne">玩家一</button>
+      <button id="playTwo">玩家二</button>
+
+      <button id="playThree">观众</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        var width = canvas.width;
+        var height = canvas.height;
+        var lineNumber = 16;
+        var padding = 8;
+        var r = 6;
+        var distance = 30;
+        var pointR = 3;
+        var fourDot = [{x:3 *distance +padding, y:3 *distance +padding},{x:12 *distance +padding, y:3 *distance +padding},
+        {x:3 *distance +padding, y:12 *distance +padding},{x:12 *distance +padding, y:12 *distance +padding}];
+        
+        var socket = io();
+        
+        // 接收消息
+        socket.on('game', function(msg){
+            var row = JSON.parse(msg);
+            
+            if (!row.success) {
+                alert(row.message);
+                return;
+            }
+            
+            var rows = row.rows;
+            if (rows && rows.length > 0) {
+                process(rows);
+            }
+        });
+        
+        //登录id
+        var client_id = "1";
+        var status = 1;
+        
+        $('#playOne').click(function(){
+            socket.emit("login",JSON.stringify({"game_id":"1","client_id":"1"}));
+            
+            client_id = "1";
+        });
+        
+        $('#playTwo').click(function(){
+            socket.emit("login",JSON.stringify({"game_id":"1","client_id":"2"}));
+            
+            client_id = "2";
+        });
+        
+        $('#playThree').click(function(){
+            socket.emit("login",JSON.stringify({"game_id":"1","client_id":"3"}));
+            
+            client_id = "3";
+        });
+        
+        $('#starGame').click(function(){
+            reCanvasQipan();
+        })
+        
+        //绘制棋盘
+        function qipan(){
+            context.fillStyle = '#999';
+            context.strokeStyle = '#999';
+            
+            var starDotX = 0;
+            var starDotY = 0;
+            
+            for (var i = 0; i < lineNumber; i++) {
+                context.save();
+                context.beginPath();
+                context.lineWidth = 2;
+                context.moveTo(i * distance +padding, padding);
+                context.lineTo(i * distance +padding, distance * (lineNumber-1) +padding);
+                context.stroke();
+            }
+            
+            for (var i = 0; i < lineNumber; i++) {
+                context.save();
+                context.beginPath();
+                context.moveTo(padding, i * distance +padding);
+                context.lineTo(distance * (lineNumber-1) +padding, i * distance +padding);
+                context.stroke();
+            
+            }
+            
+            for (var i = 0; i < fourDot.length; i++) {
+                var fourDotPoint = fourDot[i]
+                context.save();
+                context.beginPath();
+                context.arc(fourDotPoint.x, fourDotPoint.y, pointR, 0, 2*Math.PI);
+                context.fill();
+                context.stroke();
+            }
+        
+        }
+        
+        function process(rows) {
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+            
+                if(row.type == 'dot'){
+                    var dot = row.dot;
+                    var dotPointXm = dot.i *distance +padding;
+                    var dotPointYm = dot.j *distance +padding;
+                    
+                    context.save();
+                    context.beginPath();
+                    
+                    if (row.player == "1") {
+                        context.fillStyle = '#000';
+                        context.strokeStyle = '#000';
+                        
+                        status = "2";
+                    } else {
+                        context.fillStyle = 'red';
+                        context.strokeStyle = 'red';
+                        
+                        status = "1";
+                    }
+                    context.arc(dotPointXm, dotPointYm, r, 0, 2*Math.PI);
+                    
+                    context.fill();
+                    context.stroke();
+                }else if (row.type == "win") {
+                    alert(row.player+'赢了');
+                    reCanvasQipan();
+                } else if (row.type == "clear") {
+                    reCanvasQipan();
+                }
+            }
+        }
+        
+        function dotBlack(){
+            if (parseInt(client_id) != status) {
+                alert('还没轮到你');
+                return;
+            }
+        
+            var pageX = event.clientX;
+            var pageY = event.clientY;
+            var rect = canvas.getBoundingClientRect();
+            var canvasX = pageX - rect.left -r;
+            var canvasY = pageY - rect.top -r;
+            
+            var qipan_x = Math.round(canvasX/distance);
+            var qipan_y = Math.round(canvasY/distance);
+            
+            //下棋数据
+            socket.emit("erupt",JSON.stringify({"game_id":"1","client_id":client_id,'dot':JSON.stringify({'i':qipan_x,'j':qipan_y})}));
+        }
+        
+        function init_game() {
+            $.ajax({
+                url: "/init_game",
+                dataType: 'json',
+                type: 'POST',
+                data: {},
+                success: function(data) {
+                    if(data.success){
+                        status = 1;
+                    }
+                }.bind(this),
+                error: function(xhr, status, err) {
+                }.bind(this)
+            });
+        }
+        
+        function reCanvasQipan(){
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.save();
+            qipan();
+            
+            context.restore();
+            
+            init_game();
+        }
+        
+        canvas.addEventListener("mousedown",dotBlack);
+        
+        window.onload = function(){
+            qipan();
+        }
+    </script>
+</body>
+</html>
