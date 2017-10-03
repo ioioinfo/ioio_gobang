@@ -8,41 +8,45 @@
       #wuziqi{
         padding-top: 70px;
         text-align: center;
-        position: relative;
+
+      }
+      .canvasWrap{
+        display: inline-block;
       }
       #canvas{
+        background: url(../images/qipan.jpg)no-repeat center center;
+        background-size: cover;
       }
       #playOne{
-        position: absolute;
-        top: 200px;
-        left: 130px;
       }
       #playTwo{
-        position: absolute;
-        top: 280px;
-        left: 130px;
       }
       #playThree{
-        position: absolute;
-        top: 320px;
-        left: 130px;
       }
       #starGame{
-        position: absolute;
-        top: 130px;
-        left: 130px;
+      }
+      button{
+        width: 65px;
+        border: none;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
     <div id="wuziqi">
-      <canvas id="canvas" width="466" height="466"></canvas>
-      <button id="starGame">开始</button>
 
-      <button id="playOne">玩家一</button>
-      <button id="playTwo">玩家二</button>
+      <div class="canvasWrap">
+        <canvas id="canvas" width="466" height="466"></canvas>
+        <div class="canvasButton">
+          <button id="starGame">开始</button>
 
-      <button id="playThree">观众</button>
+          <button id="playOne">玩家一</button>
+          <button id="playTwo">玩家二</button>
+
+          <button id="playThree">观众</button>
+        </div>
+      </div>
+
     </div>
 
     <script type="text/javascript">
